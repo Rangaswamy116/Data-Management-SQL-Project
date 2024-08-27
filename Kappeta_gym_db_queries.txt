@@ -1,0 +1,80 @@
+#1 Equipment handled by each Trainer
+
+CREATE VIEW v_equip_trainer as
+SELECT equipments.Equipment_name,trainers.Trainer_name
+FROM equipments
+JOIN equipments_has_classes ON (equipments.Equipments_id=equipments_has_classes.Equipments_id)
+JOIN classes ON(classes.Classes_id=equipments_has_classes.Classes_id)
+JOIN trainers ON(trainers.Trainers_id=classes.Trainers_id);
+
+
+#2 Total price of each equipments
+CREATE VIEW v_total_equipments as 
+SELECT Equipment_name,
+sum(Total_quantity*cost) AS Equipment_total
+FROM equipments GROUP BY Equipment_name;
+
+
+#3 Get the customers that paid least membership
+CREATE VIEW v_least_cost as 
+SELECT concat(y.First_Name,' ',y.Last_name) as cust_name, x.Date_Start, x.Rate
+from  membership x JOIN customer y ON (x.Customer_id=y.Customer_id)
+GROUP BY 1=(SELECT
+COUNT(distinct Rate)
+from membership it 
+WHERE x.Rate >= it.Rate);
+
+#4 Return the COUNT of female candidates trained by each Trainer
+CREATE VIEW v_COUNT_candidates as 
+SELECT trainers.trainer_name,COUNT(customer.customer_id) as COUNT_customer from ((trainers 
+JOIN membership ON((trainers.Gym_id=membership.Gym_id)))
+JOIN customer ON((customer.Customer_id=membership.Customer_id))) 
+WHERE (customer.Gender="Female") 
+GROUP BY trainers.trainer_name;
+
+#5 Finding the Employees who work at Fitness Center-
+CREATE VIEW v_Employees as 
+SELECT Manager_name,gym_name,trainer_name from manager 
+JOIN gym ON(manager.Gym_id=gym.Gym_id) 
+AND gym_name like "Fitness Center"  
+JOIN trainers ON(trainers.gym_id=gym.Gym_id);
+
+
+#6 Finding the trainer who uses Dumbell for training purpose-
+SELECT trainer_name from trainers 
+WHERE trainers_id in
+(SELECT trainers_id from classes
+WHERE Classes_id in
+(SELECT Classes_id from equipments_has_classes 
+WHERE equipments_id in
+(SELECT Equipments_id from equipments 
+WHERE Equipment_name like "Dumbbell")));
+
+
+#7 List of managers names working in the city of Baltimore
+CREATE VIEW v_manager_city as 
+SELECT manager.manager_name,gym.City from manager 
+JOIN gym ON(manager.gym_id=gym.Gym_id) 
+WHERE gym.city="Baltimore";
+
+#8 Find the list of Customers whos membership expires by end of 2022
+CREATE VIEW v_membership_expiry as 
+SELECT concat(First_Name,' ',Last_name) as cust_name from customer 
+WHERE Customer_id in
+(SELECT Customer_id from membership 
+WHERE Expiry_date<"2022-12-30");
+
+#9 Count the number of customers state-wise
+CREATE VIEW v_Total_customers AS
+select count(*)  as Total_customers, State from Customer as C 
+JOIN membership as M ON (C.customer_id=M.customer_id) 
+JOIN gym as G ON (G.gym_id=M.gym_id) 
+GROUP BY state 
+ORDER BY Total_customers DESC;
+
+#10 City-Wise avg gym Membership rates-
+CREATE VIEW v_AVG_RATE_membership  AS
+select avg(Rate) as Avg_rate ,City from membership 
+right JOIN gym ON(membership.gym_id=gym.Gym_id) 
+GROUP BY city;
+
